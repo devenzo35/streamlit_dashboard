@@ -1,7 +1,23 @@
 import streamlit as st
-import pandas as pd
-from pandas import DataFrame
-from typing import Union
+import praw
+import psycopg2
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+connection = psycopg2.connect(
+    host=os.getenv("DB_HOST"),
+    database=os.getenv("DB_NAME"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
+)
+
+reddit = praw.Reddit(
+    client_id=os.getenv("REDDIT_CLIENT_ID"),
+    client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
+    user_agent=os.getenv("REDDIT_USER_AGENT"),
+)
 
 
 def main():
@@ -10,7 +26,9 @@ def main():
     st.divider()
 
     st.sidebar.title("Options")
-    options = st.sidebar.selectbox("Select", options=["Pattern", "Tweet", "StockTwits"])
+    options = st.sidebar.selectbox(
+        "Select", options=["Pattern", "Reddit", "StockTwits"]
+    )
 
     if options == "Pattern":
         st.text("You just selected pattern page")
@@ -18,12 +36,21 @@ def main():
             "https://eq-cdn.equiti-me.com/website/images/Artwork_of_different_chart_patterns_for_Chart_.width-800.jpg"
         )
 
-    if options == "Tweet":
-        st.text("You just selected Tweet page")
-        st.image("https://cdn.mos.cms.futurecdn.net/z3bn6deaxmrjmQHNEkpcZE.jpg")
+    if options == "Reddit":
+        selected_subreddit = st.sidebar.selectbox(
+            "Select Subreddit", options=["wallstreetbets", "Daytrading"]
+        )
+
+        subreddit = reddit.subreddit(selected_subreddit)
+
+        for submission in subreddit.hot(limit=10):
+            with st.container(border=True):
+                st.subheader(submission.title)
+                st.metric(value=submission.score, label="Score")
+                st.link_button(url=submission.url, label="Go to post")
 
     if options == "StockTwits":
-        st.image("https://upload.wikimedia.org/wikipedia/en/5/58/Stocktiwts.png")
+        st.title("Soon...")
 
 
 if __name__ == "__main__":
